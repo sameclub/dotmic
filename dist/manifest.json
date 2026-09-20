@@ -1,0 +1,17 @@
+{
+  "name": "DotMic",
+  "version": "1.8",
+  "chip": "ESP32-S3",
+  "file": "DotMic-v1.8.bin",
+  "bytes": 1200480,
+  "sha256": "ef9cc999000a15274f0bfcd45be505a2d17a1363d1ae78a892acee2f65fe46cf",
+  "format": "application-only",
+  "install": "Launcher SD file browser",
+  "audio": "USB UAC1 mono PCM 48000Hz 16-bit",
+  "hardware_verified": false,
+  "spectrum": "1024-point Hann FFT, 24 bands, 32 smoothed display columns, radius 2 / pitch 6 pixels, approximately 94 Hz to 12 kHz",
+  "usb": "UAC1 microphone with local IAD compatibility patch; VID 303A PID D07C",
+  "build_partition_bytes": 3145728,
+  "sleep": "APP GPIO10 light sleep; 10 seconds idle auto sleep; RTC time retained",
+  "desktop_tool": "tool/s3ai_tool.py (standalone project, not bundled in dist)"
+}
