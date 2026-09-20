@@ -1,0 +1,4 @@
+# Build only: Launcher selects the actual application slot. Ship firmware.bin only.
+nvs,data,nvs,0x9000,0x5000,
+otadata,data,ota,0xe000,0x2000,
+dotmic,app,ota_0,0x10000,0x300000,
