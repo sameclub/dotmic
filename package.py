@@ -1,6 +1,7 @@
 """Validate the local partition table and package only the Launcher app image."""
 import hashlib
 import json
+import shutil
 import struct
 from pathlib import Path
 
@@ -49,14 +50,9 @@ def main():
     (DIST / "manifest.json").write_text(json.dumps({
         "name": "DotMic", "version": VERSION, "chip": "ESP32-S3",
         "file": name, "bytes": len(image), "sha256": digest,
-        "format": "application-only", "install": "Launcher SD file browser",
-        "audio": "USB UAC1 mono PCM 48000Hz 16-bit", "hardware_verified": False,
-        "spectrum": "1024-point Hann FFT, 24 bands, 32 smoothed display columns, radius 2 / pitch 6 pixels, approximately 94 Hz to 12 kHz",
-        "usb": "UAC1 microphone with local IAD compatibility patch; VID 303A PID D07C",
-        "build_partition_bytes": app_size,
-        "sleep": "APP GPIO10 light sleep; 10 seconds idle auto sleep; RTC time retained",
-        "desktop_tool": "tool/s3ai_tool.py (standalone project, not bundled in dist)",
+        "format": "application-only", "build_partition_bytes": app_size,
     }, indent=2) + "\n")
+    shutil.copyfile(ROOT / "lib/wifi-portal/LICENSE", DIST / "wifi-portal-MIT.txt")
     print(f"PASS: {name}, {len(image)} bytes, SHA256 {digest}")
 
 

@@ -1,1 +1,1 @@
-ef9cc999000a15274f0bfcd45be505a2d17a1363d1ae78a892acee2f65fe46cf  DotMic-v1.8.bin
+82fb577f7e242a55d9fa23b0b55c2a3c1bf15c7b5e0a3caee7c4c5ef084a573b  DotMic-v1.8.bin

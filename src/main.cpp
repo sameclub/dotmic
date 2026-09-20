@@ -21,7 +21,7 @@
 // S3AI hardware baseline: no UART0 (GPIO43/44 are game buttons).
 constexpr uint32_t RATE = 48000;
 constexpr uint16_t ORANGE = 0xf940, WHITE = 0xbdf5, DIM = 0x2124;
-DotMicAudio audio(RATE, UAC_BPS_16, UAC_SPK_NONE, UAC_MIC_MONO);
+DotMicAudio audio(RATE, UAC_BPS_16, UAC_MIC_MONO);
 USBCDC Console;
 Arduino_HWSPI bus(12, 3, 11, 46, -1);
 Arduino_ST7789 panel(&bus, 7, 4, false, 240, 240, 0, 0, 0, 0);
@@ -31,7 +31,7 @@ Preferences prefs;
 std::atomic<bool> talking{false}, sleeping{false}, streaming{false}, connected{false};
 std::atomic<bool> captureStopped{false};
 std::atomic<int> micSlot{0}, gain{4};
-std::atomic<int> micMode{2}, rmsLeft{0}, rmsRight{0}, pcmRms{0}; // DotMic always uses AUTO; 2=AUTO
+std::atomic<int> rmsLeft{0}, rmsRight{0}, pcmRms{0};
 std::atomic<uint32_t> lostBytes{0}, readErrors{0};
 std::atomic<uint32_t> spectrumFrames{0};
 bool micOK = false, displayOK = false, sdOK = false, sdVerified = false, usbOK = false;
@@ -64,7 +64,7 @@ void usbEvent(void *, esp_event_base_t base, int32_t id, void *data) {
         if (id == ARDUINO_USB_STOPPED_EVENT) { connected = false; streaming = false; }
     } else if (base == ARDUINO_USB_AUDIO_CARD_EVENTS && id == ARDUINO_USB_AUDIO_CARD_INTERFACE_ENABLE_EVENT) {
         auto *event = static_cast<arduino_usb_audio_card_event_data_t *>(data);
-        if (event->interface_enable.interface == UAC_INTERFACE_MIC) streaming = event->interface_enable.enable;
+        streaming = event->interface_enable.enable;
     }
 }
 
@@ -136,23 +136,12 @@ void captureTask(void *) {
                 energy[channel]+=filtered[channel]*filtered[channel];
             }
         }
-        // The microphone may be wired to either I2S slot.  AUTO picks the
-        // clearly active slot, while a stale saved LEFT/RIGHT choice is also
-        // allowed to fall back when it is silent and the other slot is live.
-        const int mode=micMode.load();
-        if (mode==2) {
-            if (blockEnergy[0] > blockEnergy[1]*4.0 && blockEnergy[0] > 1.0e-6) {
-                slot=0; micSlot=0;
-            } else if (blockEnergy[1] > blockEnergy[0]*4.0 && blockEnergy[1] > 1.0e-6) {
-                slot=1; micSlot=1;
-            }
-        } else {
-            const int alternate=slot^1;
-            if (blockEnergy[alternate] > 1.0e-6 &&
-                (blockEnergy[slot] < 1.0e-8 || blockEnergy[alternate] > blockEnergy[slot]*4.0)) {
-                slot=alternate;
-                micSlot=slot;
-            }
+        // The microphone may be wired to either I2S slot; pick the clearly
+        // active one and stay on the last choice while both are quiet.
+        if (blockEnergy[0] > blockEnergy[1]*4.0 && blockEnergy[0] > 1.0e-6) {
+            slot=0; micSlot=0;
+        } else if (blockEnergy[1] > blockEnergy[0]*4.0 && blockEnergy[1] > 1.0e-6) {
+            slot=1; micSlot=1;
         }
         double pcmEnergy=0;
         for (int i=0; i<48; ++i) {
@@ -165,11 +154,9 @@ void captureTask(void *) {
             int left=static_cast<int>(sqrt(energy[0]/(energyFrames*48))*32768.0);
             int right=static_cast<int>(sqrt(energy[1]/(energyFrames*48))*32768.0);
             rmsLeft=left; rmsRight=right;
-            if(micMode.load()==2) {
-                // Only switch on clear evidence, not near-equal background noise.
-                if(left>4 && left>right*4) micSlot=0;
-                if(right>4 && right>left*4) micSlot=1;
-            }
+            // Only switch on clear evidence, not near-equal background noise.
+            if(left>4 && left>right*4) micSlot=0;
+            if(right>4 && right>left*4) micSlot=1;
             energy[0]=energy[1]=0; energyFrames=0;
         }
         if (connected.load() && streaming.load()) {
@@ -253,7 +240,7 @@ void drawDiagDevice() {
     text(16,12,"DOTMIC / DEVICE",ORANGE);
     diagRow(34,"FW","v1.8");
     diagRow(52,"GAIN",String(gain.load()));
-    diagRow(70,"MODE",micMode.load()==2?"AUTO":micMode.load()==0?"LEFT":"RIGHT");
+    diagRow(70,"MODE","AUTO");
     diagRow(88,"RMS","L "+String(rmsLeft.load())+"  R "+String(rmsRight.load()));
     diagRow(106,"PCM",String(pcmRms.load())+"  FFT "+String((unsigned long)spectrumFrames.load()));
     diagRow(124,"RATE",String(RATE)+" Hz  16 BIT MONO");
@@ -288,7 +275,7 @@ void pageFooter(const String &caption,bool listening) {
     text(18,211,caption,WHITE);
     text(222-status.length()*6,211,status,listening?ORANGE:DIM);
     text(18,229,listening?"RELEASE AI TO MUTE":"HOLD AI TO TALK",DIM);
-    String settings="G"+String(gain.load())+" "+(micMode.load()==2?"A":"")+(micSlot.load()?"R":"L");
+    String settings="G"+String(gain.load())+" A"+(micSlot.load()?"R":"L");
     text(222-settings.length()*6,229,settings,DIM);
 }
 const uint8_t digits[10][7] = {
@@ -453,19 +440,15 @@ void setup() {
     setenv("TZ","CST-8",1); tzset();
     prefs.begin("dotmic",false);
     gain=constrain(prefs.getInt("gain",4),1,16);
-    // Microphone applications use automatic slot selection.  Migrate any
-    // older saved LEFT/RIGHT choice back to AUTO, starting the scan at LEFT.
-    const int savedMicMode=constrain(prefs.getInt("slotmode",2),0,2);
-    micMode=2;
+    // Microphone applications scan automatically, starting from the left slot.
     micSlot=0;
-    if (savedMicMode!=2) prefs.putInt("slotmode",2);
     Console.begin(115200); Console.setTxTimeoutMs(0); Console.enableReboot(false);
     USB.VID(0x303A); USB.PID(0xD07C);
     USB.productName("S3AI DotMic"); USB.manufacturerName("S3AI DIY");
     char usbSerial[32]; snprintf(usbSerial,sizeof(usbSerial),"DOTMIC-%012llX",ESP.getEfuseMac());
     USB.serialNumber(usbSerial); USB.firmwareVersion(0x0080);
     USB.onEvent(usbEvent); audio.onEvent(usbEvent);
-    usbOK=audio.begin() && USB.begin();
+    usbOK=USB.begin();
     displayOK=bus.begin(40000000,SPI_MODE0) && panel.begin(GFX_SKIP_DATABUS_BEGIN) && canvas.begin();
     if(displayOK) {
         // User observed orange rendered blue: select BGR, retain the X mirror.
@@ -533,9 +516,9 @@ void loop() {
     if(now-lastFrame>=25) { lastFrame=now; draw(); }
     if(now-lastLog>=2000) {
         lastLog=now; const auto *p=esp_ota_get_running_partition();
-        Console.printf("DOTMIC v1.8 alive part=%s offset=0x%lx size=0x%lx mic=%d usb=%d streaming=%d sd=%d verify=%d drops=%lu rxerr=%lu rmsL=%d rmsR=%d slot=%d mode=%d pcm=%d fft=%lu\n",
+        Console.printf("DOTMIC v1.8 alive part=%s offset=0x%lx size=0x%lx mic=%d usb=%d streaming=%d sd=%d verify=%d drops=%lu rxerr=%lu rmsL=%d rmsR=%d slot=%d pcm=%d fft=%lu\n",
           p->label,(unsigned long)p->address,(unsigned long)p->size,micOK,connected.load(),streaming.load(),sdOK,sdVerified,
-          (unsigned long)lostBytes.load(),(unsigned long)readErrors.load(),rmsLeft.load(),rmsRight.load(),micSlot.load(),micMode.load(),
+          (unsigned long)lostBytes.load(),(unsigned long)readErrors.load(),rmsLeft.load(),rmsRight.load(),micSlot.load(),
           pcmRms.load(),(unsigned long)spectrumFrames.load());
     }
     delay(2);

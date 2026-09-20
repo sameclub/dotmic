@@ -11,3 +11,4 @@ dist/*
 !dist/*.bin
 !dist/manifest.json
 !dist/SHA256SUMS.txt
+!dist/wifi-portal-MIT.txt
