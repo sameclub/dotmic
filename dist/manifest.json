@@ -1,10 +1,10 @@
 {
   "name": "DotMic",
-  "version": "1.8",
+  "version": "1.9",
   "chip": "ESP32-S3",
-  "file": "DotMic-v1.8.bin",
-  "bytes": 1197184,
-  "sha256": "82fb577f7e242a55d9fa23b0b55c2a3c1bf15c7b5e0a3caee7c4c5ef084a573b",
+  "file": "DotMic-v1.9.bin",
+  "bytes": 1197376,
+  "sha256": "89e96800391844c2fa98a7e756b739b2834f08fb93262bb2599cea47282d0309",
   "format": "application-only",
   "build_partition_bytes": 3145728
 }

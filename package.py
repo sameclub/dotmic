@@ -5,7 +5,7 @@ import shutil
 import struct
 from pathlib import Path
 
-VERSION = "1.8"
+VERSION = "1.9"
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / ".pio/build/s3ai-dotmic"
 DIST = ROOT / "dist"

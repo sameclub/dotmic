@@ -39,7 +39,7 @@ S3AI Game（ESP32-S3）掌机上的按住说话 USB 麦克风 + 点阵时钟。�
 镜像是**纯应用镜像**，用 Launcher 的 TF 卡文件浏览器安装。不能写到 Flash `0x0`，
 也不要安装 `.pio` 里的合并镜像或分区表。
 
-1. 把 `dist/DotMic-v1.8.bin` 复制到 TF 卡任意位置。
+1. 把 `dist/DotMic-v1.9.bin` 复制到 TF 卡任意位置。
 2. 在 Launcher 文件浏览器里选中它。
 3. 用能传数据的 USB 线连电脑。应用启动后 USB 从 Serial/JTAG 切换为音频 + CDC，
    COM 号可能变化。
