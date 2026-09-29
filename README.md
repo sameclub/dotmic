@@ -44,7 +44,7 @@ The image is **application-only**. Install it with the Launcher SD file
 browser; do not write it to flash offset `0x0`, and do not install the merged
 image or partition table from `.pio`.
 
-1. Copy `dist/DotMic-v1.8.bin` anywhere on the TF card.
+1. Copy `dist/DotMic-v1.9.bin` anywhere on the TF card.
 2. Pick it in the Launcher file browser.
 3. Connect the host with a data-capable USB cable. On launch, USB switches from
    Serial/JTAG to audio + CDC, so the COM port number may change.
