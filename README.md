@@ -44,7 +44,7 @@ The image is **application-only**. Install it with the Launcher SD file
 browser; do not write it to flash offset `0x0`, and do not install the merged
 image or partition table from `.pio`.
 
-1. Copy `dist/DotMic-v1.9.bin` anywhere on the TF card.
+1. Copy `dist/DotMic-v1.10.bin` anywhere on the TF card.
 2. Pick it in the Launcher file browser.
 3. Connect the host with a data-capable USB cable. On launch, USB switches from
    Serial/JTAG to audio + CDC, so the COM port number may change.
@@ -174,3 +174,5 @@ than verified results.
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+Wi-Fi remembers up to 8 verified networks per app. Adding another network keeps previous entries; updating an SSID replaces its password. While offline, the firmware tries each saved network for 10 seconds in order, starting with the most recently added/updated. At capacity it replaces the oldest entry. Existing single-network credentials remain usable after upgrading. Automatic sleep waits for the first complete connection cycle.

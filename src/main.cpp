@@ -238,7 +238,7 @@ void drawDiagStatus() {
 
 void drawDiagDevice() {
     text(16,12,"DOTMIC / DEVICE",ORANGE);
-    diagRow(34,"FW","v1.9");
+    diagRow(34,"FW","v1.10");
     diagRow(52,"GAIN",String(gain.load()));
     diagRow(70,"MODE","AUTO");
     diagRow(88,"RMS","L "+String(rmsLeft.load())+"  R "+String(rmsRight.load()));
@@ -503,7 +503,7 @@ void loop() {
         if (key.raw || key.down) lastActivity=now;
     }
     if(!sleeping.load() && !sleepPending && !diagnostics && !talking.load() && !streaming.load() &&
-       !wifiPortal.isProvisioning() && now-lastActivity>=AUTO_SLEEP_MS) {
+       !wifiPortal.isProvisioning() && !wifiPortal.isConnecting() && now-lastActivity>=AUTO_SLEEP_MS) {
         sleepPending=true;
         talking=false;
         Console.println("DOTMIC AUTO SLEEP: 10s idle");
@@ -521,7 +521,7 @@ void loop() {
     if(now-lastFrame>=25) { lastFrame=now; draw(); }
     if(now-lastLog>=2000) {
         lastLog=now; const auto *p=esp_ota_get_running_partition();
-        Console.printf("DOTMIC v1.9 alive part=%s offset=0x%lx size=0x%lx mic=%d usb=%d streaming=%d sd=%d verify=%d drops=%lu rxerr=%lu rmsL=%d rmsR=%d slot=%d pcm=%d fft=%lu\n",
+        Console.printf("DOTMIC v1.10 alive part=%s offset=0x%lx size=0x%lx mic=%d usb=%d streaming=%d sd=%d verify=%d drops=%lu rxerr=%lu rmsL=%d rmsR=%d slot=%d pcm=%d fft=%lu\n",
           p->label,(unsigned long)p->address,(unsigned long)p->size,micOK,connected.load(),streaming.load(),sdOK,sdVerified,
           (unsigned long)lostBytes.load(),(unsigned long)readErrors.load(),rmsLeft.load(),rmsRight.load(),micSlot.load(),
           pcmRms.load(),(unsigned long)spectrumFrames.load());
